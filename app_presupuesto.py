@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import io
 import smtplib
 from email.mime.text import MIMEText
@@ -9,7 +9,6 @@ from email.mime.multipart import MIMEMultipart
 from email import encoders
 import base64
 from PIL import Image
-import os
 
 st.set_page_config(
     page_title="Seguimiento de Presupuesto",
@@ -70,7 +69,7 @@ with st.form("form_presupuesto"):
     
     with col1:
         num_albaran = st.text_input("📄 Número de albarán", placeholder="Ej: ALB-2024-001")
-        fecha = st.date_input("📅 Fecha", datetime.now())
+        fecha = st.date_input("📅 Fecha", datetime.now(), format="DD/MM/YYYY")
         trabajador = st.text_input("👷 Trabajador", placeholder="Ej: Pedro Martínez")
     
     with col2:
@@ -102,14 +101,16 @@ with st.form("form_presupuesto"):
                 nombre_foto = f"albaran_{num_albaran}_{timestamp}.jpg"
                 st.session_state.fotos_guardadas[nombre_foto] = foto_subida.getvalue()
             
+            hora_espana = (datetime.now() + timedelta(hours=2)).strftime("%H:%M:%S")
+            
             nuevo_registro = pd.DataFrame([{
                 "Numero_Albaran": num_albaran,
-                "Fecha": fecha.strftime("%Y-%m-%d"),
+                "Fecha": fecha.strftime("%d/%m/%Y"),
                 "Trabajador": trabajador,
                 "Partida": partida,
                 "Gasto_Euros": gasto,
                 "Comentarios": comentarios,
-                "Hora_Registro": datetime.now().strftime("%H:%M:%S"),
+                "Hora_Registro": hora_espana,
                 "Foto_Nombre": nombre_foto
             }])
             st.session_state.df_presupuesto = pd.concat([st.session_state.df_presupuesto, nuevo_registro], ignore_index=True)
@@ -221,9 +222,7 @@ with st.expander("⚙️ Configurar envío de correo"):
                              type="password",
                              value=st.session_state.email_config_presupuesto.get('password', ''))
     
-    st.caption("""
-    **Nota:** Para Gmail, debes usar una [Contraseña de aplicación](https://myaccount.google.com/apppasswords).
-    """)
+    st.caption("Para Gmail, usa una [Contraseña de aplicación](https://myaccount.google.com/apppasswords)")
     
     if st.button("💾 Guardar configuración"):
         st.session_state.email_config_presupuesto['destinatario'] = destinatario
