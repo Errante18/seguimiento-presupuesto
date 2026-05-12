@@ -11,25 +11,22 @@ import base64
 from PIL import Image
 import os
 
-# Configuración de la página
 st.set_page_config(
     page_title="Seguimiento de Presupuesto",
     page_icon="💰",
     layout="centered"
 )
 
-# Logo de la empresa
-def get_logo_base64():
-    return "https://cdn-icons-png.flaticon.com/512/3125/3125713.png"
+# LOGO DE LA EMPRESA
+logo_url = "https://i.postimg.cc/66Hm1Vpz/Captura-de-pantalla-2026-05-12-212819.png"
 
-# Título y logo
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.image(get_logo_base64(), width=150)
+    st.image(logo_url, width=150)
+
 st.title("💰 Seguimiento de Presupuesto")
 st.markdown("---")
 
-# Partidas de presupuesto predefinidas (puedes modificarlas)
 partidas_presupuesto = [
     "01 - Trazado y marcado",
     "02 - Rozas en paredes y techos",
@@ -51,7 +48,6 @@ partidas_presupuesto = [
     "99 - Otros"
 ]
 
-# Inicializar DataFrame en session_state
 if 'df_presupuesto' not in st.session_state:
     st.session_state.df_presupuesto = pd.DataFrame(columns=[
         "Numero_Albaran",
@@ -64,11 +60,9 @@ if 'df_presupuesto' not in st.session_state:
         "Foto_Nombre"
     ])
 
-# Inicializar lista de fotos
 if 'fotos_guardadas' not in st.session_state:
     st.session_state.fotos_guardadas = {}
 
-# Formulario de entrada
 st.subheader("➕ Nuevo Registro de Gasto")
 
 with st.form("form_presupuesto"):
@@ -85,7 +79,6 @@ with st.form("form_presupuesto"):
     
     comentarios = st.text_area("📝 Comentarios", placeholder="Detalles adicionales del gasto...")
     
-    # Subida de fotos (funcionalidad extra)
     st.markdown("📸 **Adjuntar foto del albarán (opcional)**")
     foto_subida = st.file_uploader("Seleccionar imagen", type=["jpg", "jpeg", "png"])
     
@@ -103,7 +96,6 @@ with st.form("form_presupuesto"):
         if errores:
             st.error(f"❌ Faltan campos obligatorios: {', '.join(errores)}")
         else:
-            # Guardar foto si se subió
             nombre_foto = ""
             if foto_subida is not None:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -126,16 +118,13 @@ with st.form("form_presupuesto"):
 
 st.markdown("---")
 
-# Mostrar registros existentes
 st.subheader("📊 Registros de Gastos")
 
 if not st.session_state.df_presupuesto.empty:
-    # Mostrar dataframe
     df_mostrar = st.session_state.df_presupuesto.copy()
     df_mostrar = df_mostrar.drop(columns=["Foto_Nombre"], errors='ignore')
     st.dataframe(df_mostrar, use_container_width=True, height=300)
     
-    # Estadísticas
     st.subheader("📈 Resumen del Presupuesto")
     total_gastado = st.session_state.df_presupuesto["Gasto_Euros"].sum()
     col1, col2, col3 = st.columns(3)
@@ -146,11 +135,9 @@ if not st.session_state.df_presupuesto.empty:
     with col3:
         st.metric("Partidas utilizadas", st.session_state.df_presupuesto["Partida"].nunique())
     
-    # Gráfico de gastos por partida
     gastos_partida = st.session_state.df_presupuesto.groupby("Partida")["Gasto_Euros"].sum().sort_values(ascending=False)
     st.bar_chart(gastos_partida.head(10))
     
-    # Ver fotos guardadas
     if st.session_state.fotos_guardadas:
         with st.expander("📸 Ver fotos de albaranes guardadas"):
             for nombre_foto, datos_foto in list(st.session_state.fotos_guardadas.items()):
@@ -166,7 +153,6 @@ else:
 
 st.markdown("---")
 
-# Función para generar Excel
 def generar_excel():
     if st.session_state.df_presupuesto.empty:
         return None
@@ -192,24 +178,6 @@ def generar_excel():
     output.seek(0)
     return output
 
-# Generar Excel con fotos (extra)
-def generar_excel_con_fotos():
-    """Genera un Excel con enlaces a las fotos"""
-    if st.session_state.df_presupuesto.empty:
-        return None
-    
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_export = st.session_state.df_presupuesto.copy()
-        # Añadir columna con indicador de foto
-        df_export["Tiene_Foto"] = df_export["Foto_Nombre"].apply(lambda x: "SÍ" if x else "NO")
-        df_export = df_export.drop(columns=["Foto_Nombre"], errors='ignore')
-        df_export.to_excel(writer, sheet_name='Seguimiento_Presupuesto', index=False)
-    
-    output.seek(0)
-    return output
-
-# Botones de exportación
 st.subheader("💾 Exportar Datos")
 
 col1, col2, col3 = st.columns(3)
@@ -235,7 +203,6 @@ with col2:
 
 st.markdown("---")
 
-# Envío de correo
 st.subheader("📧 Enviar por Correo Electrónico")
 
 if 'email_config_presupuesto' not in st.session_state:
@@ -264,7 +231,7 @@ with st.expander("⚙️ Configurar envío de correo"):
         st.session_state.email_config_presupuesto['password'] = password
         st.success("Configuración guardada")
 
-def enviar_email(destinatario, remitente, password, archivo_excel, archivo_fotos=None):
+def enviar_email(destinatario, remitente, password, archivo_excel):
     try:
         msg = MIMEMultipart()
         msg['From'] = remitente
@@ -288,7 +255,6 @@ def enviar_email(destinatario, remitente, password, archivo_excel, archivo_fotos
         """
         msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
         
-        # Adjuntar Excel
         if archivo_excel:
             part = MIMEBase('application', 'octet-stream')
             part.set_payload(archivo_excel.getvalue())
@@ -297,7 +263,6 @@ def enviar_email(destinatario, remitente, password, archivo_excel, archivo_fotos
                            f'attachment; filename=presupuesto_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx')
             msg.attach(part)
         
-        # Adjuntar fotos individualmente (extra)
         if st.session_state.fotos_guardadas:
             for nombre_foto, datos_foto in st.session_state.fotos_guardadas.items():
                 part_img = MIMEBase('application', 'octet-stream')
