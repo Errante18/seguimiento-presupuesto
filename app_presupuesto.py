@@ -69,6 +69,7 @@ with st.form("form_presupuesto"):
     
     with col1:
         num_albaran = st.text_input("📄 Número de albarán", placeholder="Ej: ALB-2024-001")
+        # Fecha con valor por defecto = hoy, pero editable
         fecha = st.date_input("📅 Fecha", datetime.now(), format="DD/MM/YYYY")
         trabajador = st.text_input("👷 Trabajador", placeholder="Ej: Pedro Martínez")
     
@@ -314,6 +315,7 @@ st.caption("""
 - Los datos se guardan solo mientras la app está activa (~2-3 horas)
 - Descarga el Excel periódicamente para conservar los registros
 - Las fotos se adjuntan automáticamente al enviar por correo
+- La fecha aparece automáticamente con el día actual, pero puedes cambiarla si es necesario
 """)
 
 st.markdown("---")
